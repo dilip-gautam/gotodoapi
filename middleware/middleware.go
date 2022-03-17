@@ -84,6 +84,19 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(task)
 }
 
+// TaskComplete update task route
+func TaskComplete(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "PUT")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	params := mux.Vars(r)
+	taskComplete(params["id"])
+	json.NewEncoder(w).Encode(params["id"])
+}
+
 func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Context-Type", "application/x-www-form-urlencoded")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -94,6 +107,15 @@ func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(params["id"])
 }
 
+// DeleteAllTask delete all tasks route
+func DeleteAllTask(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Context-Type", "application/x-www-form-urlencoded")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	count := deleteAllTask()
+	json.NewEncoder(w).Encode(count)
+	// json.NewEncoder(w).Encode("Task not found")
+
+}
 
 func getAllTask() []primitive.M {
 	cur, err := collection.Find(context.Background(), bson.D{{}})
@@ -132,6 +154,19 @@ func insertOneTask(task models.ToDoList) {
 	fmt.Println("Inserted a Single Record ", insertResult.InsertedID)
 }
 
+// task complete method, update task's status to true
+func taskComplete(task string) {
+	fmt.Println(task)
+	id, _ := primitive.ObjectIDFromHex(task)
+	filter := bson.M{"_id": id}
+	update := bson.M{"$set": bson.M{"status": true}}
+	result, err := collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("modified count: ", result.ModifiedCount)
+}
+
 
 // delete one task from the DB, delete by ID
 func deleteOneTask(task string) {
@@ -144,4 +179,15 @@ func deleteOneTask(task string) {
 	}
 
 	fmt.Println("Deleted Document", d.DeletedCount)
+}
+
+// delete all the tasks from the DB
+func deleteAllTask() int64 {
+	d, err := collection.DeleteMany(context.Background(), bson.D{{}}, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Deleted Document", d.DeletedCount)
+	return d.DeletedCount
 }
